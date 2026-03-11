@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadow Kombat Online</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Bebas+Neue&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --red: #e03030;
+  --blue: #3060e0;
+  --gold: #ffcc00;
+  --dark: #111118;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  font-family: 'Rajdhani', sans-serif;
+  color: #fff;
+}
+
+/* ── SCREENS ── */
+.screen {
+  display: none;
+  position: fixed; inset: 0;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 10;
+}
+.screen.active { display: flex; }
+
+/* ── TITLE ── */
+#titleScreen {
+  background: radial-gradient(ellipse at center, #1a0a0a 0%, #000 70%);
+}
+.title-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(40px, 8vw, 88px);
+  letter-spacing: 8px;
+  text-align: center;
+  line-height: 1;
+  background: linear-gradient(180deg, #fff 0%, var(--gold) 40%, #ff4400 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 20px rgba(255,100,0,.4));
+  margin-bottom: 6px;
+}
+.title-sub {
+  font-size: 14px; letter-spacing: .25em; color: #664422; margin-bottom: 36px;
+}
+.title-chars {
+  display: flex; gap: 32px; margin-bottom: 36px; align-items: flex-end;
+}
+.char-preview {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; transition: transform .18s;
+}
+.char-preview:hover { transform: translateY(-4px); }
+.char-preview.selected { transform: translateY(-6px); }
+.char-preview.selected .char-name { color: var(--gold); }
+.char-canvas { border-radius: 6px; }
+.char-name { font-size: 13px; font-weight: 700; letter-spacing: .15em; color: #aaa; }
+.char-stats { font-size: 10px; color: #666; text-align: center; }
+
+.menu-btns { display: flex; flex-direction: column; gap: 12px; width: 280px; }
+.mbtn {
+  padding: 14px 24px; border: 2px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.05); border-radius: 8px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px;
+  color: #fff; cursor: pointer; transition: all .18s; text-align: center;
+}
+.mbtn:hover {
+  border-color: var(--gold); background: rgba(255,200,0,.08);
+  box-shadow: 0 0 20px rgba(255,200,0,.15);
+}
+.mbtn.red { border-color: rgba(220,50,50,.4); }
+.mbtn.red:hover { border-color: var(--red); background: rgba(220,50,50,.08); box-shadow: 0 0 20px rgba(220,50,50,.2); }
+.mbtn.blue { border-color: rgba(50,80,220,.4); }
+.mbtn.blue:hover { border-color: var(--blue); background: rgba(50,80,220,.08); box-shadow: 0 0 20px rgba(50,80,220,.2); }
+
+/* ── LOBBY ── */
+#lobbyScreen { background: radial-gradient(ellipse at center, #0a0a1a 0%, #000 70%); }
+.lobby-title {
+  font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 5px;
+  color: var(--gold); margin-bottom: 28px;
+}
+.room-code-display {
+  font-family: 'Bebas Neue', sans-serif; font-size: 72px; letter-spacing: 16px;
+  color: #fff; text-align: center;
+  background: rgba(255,255,255,.05); border: 2px solid rgba(255,200,0,.3);
+  border-radius: 12px; padding: 16px 32px; margin-bottom: 12px;
+  text-shadow: 0 0 30px rgba(255,200,0,.4);
+}
+.lobby-hint { font-size: 13px; color: #555; letter-spacing: .1em; margin-bottom: 28px; }
+.lobby-status { font-size: 16px; color: #aaa; margin-bottom: 24px; display: flex; align-items: center; gap: 8px; }
+.waiting-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.6)} }
+
+.join-form { display: flex; flex-direction: column; gap: 12px; width: 280px; }
+.join-input {
+  background: rgba(255,255,255,.06); border: 2px solid rgba(255,255,255,.12);
+  border-radius: 8px; padding: 12px 16px; color: #fff;
+  font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 8px;
+  text-align: center; outline: none; transition: border-color .2s;
+}
+.join-input:focus { border-color: var(--gold); }
+.join-input::placeholder { color: rgba(255,255,255,.15); font-size: 16px; letter-spacing: 2px; }
+.err-msg { color: var(--red); font-size: 13px; text-align: center; min-height: 16px; }
+
+/* ── GAME SCREEN ── */
+#gameScreen {
+  background: #000;
+  flex-direction: column;
+}
+.game-wrap {
+  position: relative;
+  width: 800px; max-width: 100vw;
+}
+
+/* HUD */
+#hud {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 800px; max-width: 100vw;
+  padding: 8px 0; position: relative;
+}
+.hp-bar-wrap {
+  flex: 1; display: flex; flex-direction: column; gap: 3px;
+}
+.hp-bar-wrap.right { align-items: flex-end; }
+.player-name {
+  font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px;
+}
+.hp-bar-bg {
+  height: 18px; border-radius: 3px; overflow: hidden;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+}
+.hp-bar-inner {
+  height: 100%; transition: width .05s;
+  background: linear-gradient(90deg, #00cc00, #88ff00);
+}
+.hp-bar-inner.low   { background: linear-gradient(90deg, #ff6600, #ffaa00); }
+.hp-bar-inner.crit  { background: linear-gradient(90deg, #cc0000, #ff3300); animation: hpFlash .4s infinite; }
+@keyframes hpFlash { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+.hud-center {
+  display: flex; flex-direction: column; align-items: center; padding: 0 16px;
+}
+.round-timer {
+  font-family: 'Bebas Neue', sans-serif; font-size: 42px; color: #fff;
+  text-shadow: 0 0 15px rgba(255,200,0,.5);
+  line-height: 1;
+}
+.round-timer.urgent { color: var(--red); animation: timerPulse .5s infinite; }
+@keyframes timerPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+.win-dots { display: flex; gap: 6px; margin-top: 2px; }
+.win-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.3); }
+.win-dot.filled { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+.special-cd {
+  font-size: 10px; color: #666; letter-spacing: .1em; margin-top: 2px;
+}
+
+/* Canvas */
+#gameCanvas {
+  display: block;
+  width: 800px; max-width: 100vw;
+  height: auto; border: 1px solid rgba(255,255,255,.05);
+  image-rendering: pixelated;
+}
+
+/* Controls hint */
+.controls-hint {
+  display: flex; gap: 24px; justify-content: space-between;
+  width: 800px; max-width: 100vw;
+  padding: 6px 8px; font-size: 10px; color: #333;
+}
+.ctrl-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.ctrl-key {
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 3px; padding: 1px 5px; font-size: 10px; font-family: monospace;
+}
+
+/* ── OVERLAYS ── */
+.game-overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
+  z-index: 50;
+  opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.game-overlay.visible { opacity: 1; pointer-events: all; }
+
+.overlay-title {
+  font-family: 'Bebas Neue', sans-serif; font-size: clamp(32px, 6vw, 64px);
+  letter-spacing: 6px; text-align: center; margin-bottom: 8px;
+}
+.overlay-sub { font-size: 14px; color: #aaa; margin-bottom: 24px; letter-spacing: .1em; }
+
+/* Flash messages */
+.flash-msg {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 6px;
+  color: #fff; text-shadow: 0 0 30px rgba(255,200,0,.8);
+  pointer-events: none; z-index: 60;
+  opacity: 0; transition: opacity .1s;
+}
+.flash-msg.show { opacity: 1; }
+
+/* Combo counter */
+#comboDisplay {
+  position: absolute;
+  font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px;
+  pointer-events: none; z-index: 55; text-shadow: 0 0 10px currentColor;
+  opacity: 0; transition: opacity .2s; top: 10px;
+}
+#comboDisplay.p0 { left: 16px; color: var(--red); }
+#comboDisplay.p1 { right: 16px; color: var(--blue); }
+#comboDisplay.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ TITLE SCREEN ═══════════ -->
+<div class="screen active" id="titleScreen">
+  <div class="title-logo">SHADOW<br>KOMBAT</div>
+  <div class="title-sub">ONLINE · 1 VS 1</div>
+
+  <div class="title-chars">
+    <div class="char-preview selected" id="charWarrior" onclick="selectChar('warrior')">
+      <canvas class="char-canvas" id="previewWarrior" width="64" height="96"></canvas>
+      <div class="char-name">WARRIOR</div>
+      <div class="char-stats">PWR ████░ SPD ███░░</div>
+    </div>
+    <div class="char-preview" id="charNinja" onclick="selectChar('ninja')">
+      <canvas class="char-canvas" id="previewNinja" width="64" height="96"></canvas>
+      <div class="char-name">NINJA</div>
+      <div class="char-stats">PWR ███░░ SPD █████</div>
+    </div>
+  </div>
+
+  <div class="menu-btns">
+    <div class="mbtn red" onclick="goCreate()">⚔ CREATE ROOM</div>
+    <div class="mbtn blue" onclick="goJoin()">🔗 JOIN ROOM</div>
+  </div>
+</div>
+
+<!-- ═══════════ LOBBY: HOST ═══════════ -->
+<div class="screen" id="hostScreen">
+  <div class="lobby-title">⚔ WAITING FOR OPPONENT</div>
+  <div class="room-code-display" id="roomCodeDisplay">------</div>
+  <div class="lobby-hint">Send this code to your opponent</div>
+  <div class="lobby-status">
+    <div class="waiting-dot"></div>
+    <span id="hostStatus">Waiting for player 2...</span>
+  </div>
+  <div class="mbtn" style="width:220px" onclick="goTitle()">← BACK</div>
+</div>
+
+<!-- ═══════════ LOBBY: JOIN ═══════════ -->
+<div class="screen" id="joinScreen">
+  <div class="lobby-title">🔗 ENTER ROOM CODE</div>
+  <div class="join-form">
+    <input class="join-input" id="codeInput" placeholder="XXXXXX" maxlength="6"
+      oninput="this.value=this.value.toUpperCase()">
+    <div class="mbtn blue" onclick="submitJoin()">JOIN BATTLE</div>
+    <div class="err-msg" id="joinErr"></div>
+    <div class="mbtn" style="font-size:16px;letter-spacing:2px" onclick="goTitle()">← BACK</div>
+  </div>
+</div>
+
+<!-- ═══════════ GAME SCREEN ═══════════ -->
+<div class="screen" id="gameScreen">
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hp-bar-wrap">
+      <div class="player-name" id="p0name" style="color:#e03030">WARRIOR</div>
+      <div class="hp-bar-bg" style="width:260px">
+        <div class="hp-bar-inner" id="p0hp" style="width:100%"></div>
+      </div>
+      <div class="special-cd" id="p0cd"></div>
+    </div>
+
+    <div class="hud-center">
+      <div class="round-timer" id="roundTimer">60</div>
+      <div class="win-dots" id="winDots">
+        <div class="win-dot" id="wd0"></div>
+        <div class="win-dot" id="wd1"></div>
+      </div>
+    </div>
+
+    <div class="hp-bar-wrap right">
+      <div class="player-name" id="p1name" style="color:#3060e0">NINJA</div>
+      <div class="hp-bar-bg" style="width:260px">
+        <div class="hp-bar-inner" id="p1hp" style="width:100%;transform:scaleX(-1);transform-origin:left"></div>
+      </div>
+      <div class="special-cd" id="p1cd"></div>
+    </div>
+  </div>
+
+  <!-- Canvas wrap -->
+  <div class="game-wrap">
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <!-- Overlays inside wrap -->
+    <div class="game-overlay" id="roundOverlay">
+      <div class="overlay-title" id="roundTitle">ROUND OVER</div>
+      <div class="overlay-sub" id="roundSub"></div>
+    </div>
+
+    <div class="game-overlay" id="gameOverOverlay">
+      <div class="overlay-title" id="goTitle" style="color:var(--gold)">FINISH HIM!</div>
+      <div class="overlay-sub" id="goSub"></div>
+      <div class="mbtn" onclick="requestRematch()" style="width:200px;font-size:18px;letter-spacing:3px">REMATCH</div>
+      <div class="mbtn" onclick="goTitle()" style="width:200px;font-size:14px;letter-spacing:2px;margin-top:8px">MAIN MENU</div>
+    </div>
+
+    <div class="game-overlay" id="disconnectOverlay">
+      <div class="overlay-title" style="color:var(--red)">OPPONENT LEFT</div>
+      <div class="overlay-sub">The battle has ended</div>
+      <div class="mbtn" onclick="goTitle()" style="width:200px">MAIN MENU</div>
+    </div>
+
+    <!-- Flash messages -->
+    <div class="flash-msg" id="flashFight">FIGHT!</div>
+    <div class="flash-msg" id="flashKO" style="color:var(--red)">K.O.!</div>
+
+    <!-- Combo displays -->
+    <div id="comboDisplay" class="p0"></div>
+    <div id="comboDisplay1" class="p1"></div>
+  </div>
+
+  <div class="controls-hint">
+    <div class="ctrl-group">
+      <span style="color:#555">P1:</span>
+      <span><span class="ctrl-key">←→</span> Move</span>
+      <span><span class="ctrl-key">↑</span> Jump</span>
+      <span><span class="ctrl-key">A</span> Punch</span>
+      <span><span class="ctrl-key">S</span> Kick</span>
+      <span><span class="ctrl-key">D</span> Special</span>
+      <span><span class="ctrl-key">Shift</span> Block</span>
+    </div>
+    <div class="ctrl-group" style="justify-content:flex-end">
+      <span style="color:#555">P2:</span>
+      <span><span class="ctrl-key">A/D</span> Move</span>
+      <span><span class="ctrl-key">W</span> Jump</span>
+      <span><span class="ctrl-key">J</span> Punch</span>
+      <span><span class="ctrl-key">K</span> Kick</span>
+      <span><span class="ctrl-key">L</span> Special</span>
+      <span><span class="ctrl-key">Ctrl</span> Block</span>
+    </div>
+  </div>
+</div>
+
+<!-- Socket.io client -->
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════
+// SOCKET
+// ═══════════════════════════════════════════════════
+const socket = io({ transports: ['websocket', 'polling'] });
+
+// ═══════════════════════════════════════════════════
+// CLIENT STATE
+// ═══════════════════════════════════════════════════
+let myIdx      = null;  // 0 or 1
+let myChar     = 'warrior';
+let gameState  = null;
+let lastState  = null;
+let inputState = { left:false, right:false, jump:false, punch:false, kick:false, special:false, block:false };
+let prevInput  = {};
+let inputDirty = false;
+let gameActive = false;
+
+// ═══════════════════════════════════════════════════
+// CANVAS & RENDERER
+// ═══════════════════════════════════════════════════
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+const CW = 800, CH = 400;
+const FLOOR_Y = 330;
+
+// ─── Sprite renderer ──────────────────────────────────────────
+// Draw pixel-art style character from code (easily swappable for real sprites)
+function drawCharacter(p, isMe) {
+  const x = Math.round(p.x);
+  const y = Math.round(p.y);
+  const f = p.facing;
+  const t = Date.now() / 1000;
+
+  // Colors
+  const isWarrior = p.charType === 'warrior';
+  const mainColor = isWarrior ? '#cc2020' : '#2040cc';
+  const darkColor = isWarrior ? '#881010' : '#102088';
+  const skinColor = '#e8b48a';
+  const hairColor = isWarrior ? '#331100' : '#001133';
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(f, 1);
+
+  const st = p.state;
+  const timer = p.stateTimer;
+
+  // ── Compute offsets per state ──────────────────────
+  let legSwing = 0, armSwing = 0, bodyLean = 0, bobY = 0, legBend = 0;
+  let punchExtend = 0, kickExtend = 0, blockPose = false;
+  let hitFlash = false;
+
+  if (st === 'walk') {
+    const speed = 6;
+    legSwing = Math.sin(t * speed) * 18;
+    armSwing = Math.sin(t * speed + Math.PI) * 14;
+    bobY = Math.abs(Math.sin(t * speed)) * 2;
+    bodyLean = Math.sin(t * speed * 0.5) * 2;
+  } else if (st === 'idle') {
+    bobY = Math.sin(t * 2) * 1.5;
+    armSwing = Math.sin(t * 2.5) * 3;
+  } else if (st === 'jump') {
+    bobY = -6;
+    legBend = -25;
+    armSwing = -20;
+  } else if (st === 'punch') {
+    punchExtend = Math.min(1, (12 - timer) / 5);
+    armSwing = punchExtend * 40;
+    bodyLean = punchExtend * 8;
+  } else if (st === 'kick') {
+    kickExtend = Math.min(1, (14 - timer) / 6);
+    legSwing = -kickExtend * 50;
+    bodyLean = kickExtend * 10;
+  } else if (st === 'special') {
+    const phase = Math.min(1, (20 - timer) / 8);
+    punchExtend = Math.sin(phase * Math.PI);
+    armSwing    = punchExtend * 60;
+    bodyLean    = punchExtend * 14;
+    kickExtend  = Math.sin(phase * Math.PI * 0.5) * 0.5;
+    legSwing    = -kickExtend * 30;
+  } else if (st === 'block') {
+    blockPose = true;
+    armSwing  = 30;
+    legBend   = 10;
+    bodyLean  = -6;
+  } else if (st === 'hit') {
+    hitFlash  = true;
+    bodyLean  = -15;
+    armSwing  = -25;
+    legSwing  = 20;
+  } else if (st === 'ko') {
+    bobY     = 6;
+    bodyLean = 30;
+    armSwing = -40;
+    legSwing = 40;
+  }
+
+  // ── Shadow ──────────────────────────────────────────
+  const shadowY = FLOOR_Y - y;
+  ctx.fillStyle = 'rgba(0,0,0,.3)';
+  ctx.beginPath();
+  ctx.ellipse(0, shadowY, 22, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── Hit flash overlay ───────────────────────────────
+  if (hitFlash && Math.floor(Date.now() / 80) % 2 === 0) {
+    ctx.globalAlpha = 0.7;
+  }
+
+  // ── Body base Y offset ──────────────────────────────
+  const by = -bobY;
+
+  // ── LEGS ──────────────────────────────────────────────
+  // Left leg (back)
+  ctx.save();
+  ctx.translate(0, by);
+  // Back leg
+  ctx.fillStyle = darkColor;
+  ctx.save();
+  ctx.translate(-6, -30);
+  ctx.rotate((legBend - legSwing * 0.5) * Math.PI / 180);
+  ctx.fillRect(-5, 0, 10, 26); // thigh
+  ctx.translate(0, 26);
+  ctx.rotate(Math.max(0, legSwing * 0.3) * Math.PI / 180);
+  ctx.fillRect(-5, 0, 10, 22); // shin
+  // Boot
+  ctx.fillStyle = '#111';
+  ctx.fillRect(-7, 22, 14, 8);
+  ctx.restore();
+
+  // Front leg
+  ctx.fillStyle = mainColor;
+  ctx.save();
+  ctx.translate(6, -30);
+  ctx.rotate((legBend + legSwing) * Math.PI / 180);
+  ctx.fillRect(-5, 0, 10, 26);
+  ctx.translate(0, 26);
+  ctx.rotate(Math.max(0, -legSwing * 0.3) * Math.PI / 180);
+  ctx.fillRect(-5, 0, 10, 22);
+  ctx.fillStyle = '#222';
+  ctx.fillRect(-7, 22, 14, 8);
+  ctx.restore();
+  ctx.restore();
+
+  // ── TORSO ──────────────────────────────────────────────
+  ctx.save();
+  ctx.translate(0, by);
+  ctx.rotate(bodyLean * Math.PI / 180);
+
+  // Body
+  ctx.fillStyle = mainColor;
+  ctx.fillRect(-13, -72, 26, 40);
+
+  // Belt
+  ctx.fillStyle = '#111';
+  ctx.fillRect(-13, -36, 26, 5);
+
+  // Chest detail
+  ctx.fillStyle = darkColor;
+  ctx.fillRect(-13, -72, 5, 40); // left panel
+  if (isWarrior) {
+    // Warrior: armor shoulder
+    ctx.fillStyle = '#888';
+    ctx.fillRect(-16, -72, 6, 12);
+    ctx.fillRect(10, -72, 6, 12);
+  } else {
+    // Ninja: chest stripe
+    ctx.fillStyle = '#aaddff';
+    ctx.fillRect(-2, -72, 4, 40);
+  }
+
+  // ── ARMS ──────────────────────────────────────────────
+  // Back arm
+  ctx.save();
+  ctx.translate(-13, -65);
+  const backArmAngle = blockPose ? -50 : (-armSwing * 0.6);
+  ctx.rotate(backArmAngle * Math.PI / 180);
+  ctx.fillStyle = darkColor;
+  ctx.fillRect(-5, 0, 10, 22); // upper
+  ctx.translate(0, 22);
+  ctx.rotate(blockPose ? 90 * Math.PI/180 : Math.max(0, -armSwing * 0.3) * Math.PI / 180);
+  ctx.fillRect(-5, 0, 10, 18); // fore
+  // Fist / glove
+  ctx.fillStyle = isWarrior ? '#884422' : '#2244aa';
+  ctx.fillRect(-6, 18, 12, 10);
+  ctx.restore();
+
+  // Front arm
+  ctx.save();
+  ctx.translate(13, -65);
+  const frontArmAngle = blockPose ? -30 : armSwing;
+  ctx.rotate(frontArmAngle * Math.PI / 180);
+  ctx.fillStyle = mainColor;
+  ctx.fillRect(-5, 0, 10, 22);
+  ctx.translate(0, 22);
+  ctx.rotate(blockPose ? -60 * Math.PI/180 : Math.max(0, armSwing * 0.3) * Math.PI / 180);
+  ctx.fillRect(-5, 0, 10, 18);
+  ctx.fillStyle = isWarrior ? '#884422' : '#2244aa';
+  ctx.fillRect(-6, 18, 12, 10);
+
+  // ── Special effect on extended punch ────────────────────
+  if (punchExtend > 0.4 && st === 'special') {
+    ctx.save();
+    ctx.translate(0, 28);
+    const glowSize = punchExtend * 20;
+    ctx.shadowColor = isWarrior ? '#ff4400' : '#00aaff';
+    ctx.shadowBlur  = 20;
+    ctx.fillStyle   = isWarrior ? 'rgba(255,100,0,.7)' : 'rgba(0,150,255,.7)';
+    ctx.beginPath();
+    ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore(); // arms
+
+  // ── NECK ──────────────────────────────────────────────
+  ctx.fillStyle = skinColor;
+  ctx.fillRect(-5, -78, 10, 8);
+
+  // ── HEAD ──────────────────────────────────────────────
+  if (isWarrior) {
+    // Warrior: bare head with headband
+    ctx.fillStyle = skinColor;
+    ctx.fillRect(-12, -100, 24, 24);
+    ctx.fillStyle = darkColor;
+    ctx.fillRect(-14, -86, 28, 5); // headband
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-6, -96, 5, 5); // eye L
+    ctx.fillRect(1, -96, 5, 5);  // eye R
+    ctx.fillStyle = '#cc0000';
+    // Scar
+    ctx.fillRect(-3, -94, 1, 8);
+  } else {
+    // Ninja: masked
+    ctx.fillStyle = '#0a0a22';
+    ctx.fillRect(-12, -102, 24, 28); // mask base
+    ctx.fillStyle = '#334';
+    ctx.fillRect(-13, -100, 26, 24); // mask
+    // Eye slit
+    ctx.fillStyle = '#00ddff';
+    ctx.fillRect(-10, -94, 8, 4);
+    ctx.fillRect( 2, -94, 8, 4);
+    // Head wrap
+    ctx.fillStyle = darkColor;
+    ctx.fillRect(-13, -100, 26, 6);
+  }
+
+  ctx.restore(); // torso
+
+  // ── MY PLAYER INDICATOR ──────────────────────────────
+  if (isMe) {
+    ctx.fillStyle = 'rgba(255,255,255,.6)';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('▼ YOU', 0, -108 - bobY);
+  }
+
+  // ── Special cooldown visual ───────────────────────────
+  if (p.specialCD > 0) {
+    const pct = 1 - p.specialCD / 180;
+    ctx.strokeStyle = 'rgba(255,200,0,.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, -120, 8, -Math.PI/2, -Math.PI/2 + pct * Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.restore(); // main
+}
+
+// ─── Background ────────────────────────────────────────────
+function drawArena() {
+  // Sky
+  const sky = ctx.createLinearGradient(0, 0, 0, CH);
+  sky.addColorStop(0, '#0a0015');
+  sky.addColorStop(0.5, '#150025');
+  sky.addColorStop(1, '#1a0010');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, CW, CH);
+
+  // Moon
+  ctx.fillStyle = 'rgba(200,180,100,.08)';
+  ctx.beginPath();
+  ctx.arc(CW/2, 60, 80, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(200,180,100,.04)';
+  ctx.beginPath();
+  ctx.arc(CW/2, 60, 110, 0, Math.PI*2);
+  ctx.fill();
+
+  // Stars
+  ctx.fillStyle = 'rgba(255,255,255,.7)';
+  const stars = [[40,30],[120,15],[200,45],[350,10],[500,25],[620,18],[720,40],[760,60],[80,80]];
+  stars.forEach(([sx,sy]) => {
+    ctx.fillRect(sx, sy, 1, 1);
+    ctx.fillRect(sx+1, sy, 1, 1);
+  });
+
+  // Background pillars / ruins
+  ctx.fillStyle = 'rgba(30,10,40,.8)';
+  [[80,150,40,180],[180,200,30,130],[620,170,35,160],[720,210,28,120]].forEach(([px,py,pw,ph]) => {
+    ctx.fillRect(px, py, pw, ph);
+    // pillar top
+    ctx.fillStyle = 'rgba(50,20,60,.9)';
+    ctx.fillRect(px-4, py, pw+8, 15);
+    ctx.fillStyle = 'rgba(30,10,40,.8)';
+  });
+
+  // Torches (flickering)
+  const flicker = Math.sin(Date.now()/80) * 0.3 + 0.7;
+  [[150, 260], [650, 260]].forEach(([tx, ty]) => {
+    ctx.fillStyle = '#553';
+    ctx.fillRect(tx - 3, ty, 6, 40);
+    // Flame
+    const g = ctx.createRadialGradient(tx, ty, 2, tx, ty, 18);
+    g.addColorStop(0, `rgba(255,200,0,${flicker})`);
+    g.addColorStop(0.4, `rgba(255,80,0,${flicker*0.7})`);
+    g.addColorStop(1, 'rgba(255,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(tx, ty, 18, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // Floor
+  const floorGrad = ctx.createLinearGradient(0, FLOOR_Y, 0, CH);
+  floorGrad.addColorStop(0, '#2a1520');
+  floorGrad.addColorStop(0.3, '#1a0d14');
+  floorGrad.addColorStop(1, '#0d0508');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, FLOOR_Y, CW, CH - FLOOR_Y);
+
+  // Floor line glow
+  const lineGlow = ctx.createLinearGradient(0, FLOOR_Y, 0, FLOOR_Y + 4);
+  lineGlow.addColorStop(0, 'rgba(180,50,50,.5)');
+  lineGlow.addColorStop(1, 'rgba(180,50,50,0)');
+  ctx.fillStyle = lineGlow;
+  ctx.fillRect(0, FLOOR_Y, CW, 4);
+
+  // Floor tiles
+  ctx.strokeStyle = 'rgba(80,40,50,.4)';
+  ctx.lineWidth = 1;
+  for (let tx = 0; tx < CW; tx += 50) {
+    ctx.beginPath();
+    ctx.moveTo(tx, FLOOR_Y);
+    ctx.lineTo(tx, CH);
+    ctx.stroke();
+  }
+
+  // Floor lines
+  ctx.strokeStyle = 'rgba(80,40,50,.2)';
+  for (let ty = FLOOR_Y + 20; ty < CH; ty += 20) {
+    ctx.beginPath();
+    ctx.moveTo(0, ty);
+    ctx.lineTo(CW, ty);
+    ctx.stroke();
+  }
+}
+
+// ─── Particles ─────────────────────────────────────────────
+function drawParticles(particles) {
+  if (!particles) return;
+  particles.forEach(pt => {
+    ctx.globalAlpha = Math.max(0, pt.life / 30);
+    ctx.fillStyle = pt.color;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+// ─── Distance line ─────────────────────────────────────────
+function drawDistanceLine(p0, p1) {
+  const dist = Math.abs(p0.x - p1.x);
+  if (dist < 90) {
+    const mid = (p0.x + p1.x) / 2;
+    ctx.strokeStyle = `rgba(255,200,0,${(90-dist)/90 * 0.3})`;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.moveTo(p0.x, FLOOR_Y - 20);
+    ctx.lineTo(p1.x, FLOOR_Y - 20);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ─── Main render ───────────────────────────────────────────
+function render() {
+  if (!gameState) return;
+  const gs = gameState;
+
+  ctx.clearRect(0, 0, CW, CH);
+  drawArena();
+  drawParticles(gs.particles);
+  drawDistanceLine(gs.players[0], gs.players[1]);
+
+  // Draw player 1 then player 2 (handle z-order by x)
+  const order = gs.players[0].x < gs.players[1].x ? [0, 1] : [1, 0];
+  order.forEach(i => {
+    drawCharacter(gs.players[i], i === myIdx);
+  });
+
+  updateHUD(gs);
+}
+
+// ─── HUD update ────────────────────────────────────────────
+function updateHUD(gs) {
+  if (!gs) return;
+  const [p0, p1] = gs.players;
+
+  // HP bars
+  function setHpBar(id, hp, max) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const pct = Math.max(0, (hp / max) * 100);
+    el.style.width = pct + '%';
+    el.className = 'hp-bar-inner' + (pct < 25 ? ' crit' : pct < 50 ? ' low' : '');
+  }
+  setHpBar('p0hp', p0.hp, p0.maxHp);
+  setHpBar('p1hp', p1.hp, p1.maxHp);
+
+  // Names
+  document.getElementById('p0name').textContent = p0.charType.toUpperCase();
+  document.getElementById('p1name').textContent = p1.charType.toUpperCase();
+
+  // Timer
+  const secs = Math.ceil(gs.roundTimer / 60);
+  const timerEl = document.getElementById('roundTimer');
+  timerEl.textContent = secs;
+  timerEl.className = 'round-timer' + (secs <= 10 ? ' urgent' : '');
+
+  // Win dots
+  const dots = ['wd0','wd1'];
+  dots.forEach((id, i) => {
+    document.getElementById(id).className = 'win-dot' + (gs.players[i].wins > 0 ? ' filled' : '');
+  });
+
+  // Special CDs
+  const cdFmt = cd => cd > 0 ? `SPECIAL: ${(cd/60).toFixed(1)}s` : 'SPECIAL READY ⚡';
+  document.getElementById('p0cd').textContent = cdFmt(p0.specialCD);
+  document.getElementById('p1cd').textContent = cdFmt(p1.specialCD);
+
+  // Combo displays
+  updateComboDisplay(p0, 'comboDisplay', 0);
+  updateComboDisplay(p1, 'comboDisplay1', 1);
+}
+
+function updateComboDisplay(p, elId, idx) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (p.comboCount >= 2 && p.comboTimer > 0) {
+    el.textContent = p.comboCount + ' HIT COMBO!';
+    el.classList.add('show');
+  } else {
+    el.classList.remove('show');
+  }
+}
+
+// ─── Phase overlays ────────────────────────────────────────
+const CHAR_NAMES = { warrior: 'WARRIOR', ninja: 'NINJA' };
+let flashTimeout = null;
+
+function showFlash(elId, duration) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), duration);
+}
+
+function showOverlay(id) {
+  document.querySelectorAll('.game-overlay').forEach(o => o.classList.remove('visible'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('visible');
+}
+function hideOverlays() {
+  document.querySelectorAll('.game-overlay').forEach(o => o.classList.remove('visible'));
+}
+
+// ═══════════════════════════════════════════════════
+// INPUT HANDLING
+// ═══════════════════════════════════════════════════
+const keyMap = {
+  // P1 keys
+  ArrowLeft:  'left',
+  ArrowRight: 'right',
+  ArrowUp:    'jump',
+  KeyA:       'punch',
+  KeyS:       'kick',
+  KeyD:       'special',
+  ShiftLeft:  'block',
+  ShiftRight: 'block',
+};
+
+document.addEventListener('keydown', e => {
+  if (!gameActive) return;
+  const action = keyMap[e.code];
+  if (!action) return;
+  e.preventDefault();
+
+  if (!inputState[action]) {
+    inputState[action] = true;
+    inputDirty = true;
+  }
+});
+
+document.addEventListener('keyup', e => {
+  if (!gameActive) return;
+  const action = keyMap[e.code];
+  if (!action) return;
+  e.preventDefault();
+
+  if (inputState[action]) {
+    inputState[action] = false;
+    inputDirty = true;
+  }
+});
+
+// Send input loop
+setInterval(() => {
+  if (!gameActive || myIdx === null) return;
+  // Always send (server needs continuous block/movement state)
+  socket.emit('input', { ...inputState });
+  // Reset one-shots
+  inputState.punch   = false;
+  inputState.kick    = false;
+  inputState.special = false;
+  inputState.jump    = false;
+}, 1000 / 60);
+
+// ═══════════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════════
+let rafId = null;
+function startRenderLoop() {
+  if (rafId) cancelAnimationFrame(rafId);
+  function frame() {
+    render();
+    rafId = requestAnimationFrame(frame);
+  }
+  rafId = requestAnimationFrame(frame);
+}
+function stopRenderLoop() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+}
+
+// ═══════════════════════════════════════════════════
+// SOCKET EVENTS
+// ═══════════════════════════════════════════════════
+socket.on('roomCreated', ({ code, playerIdx }) => {
+  myIdx = playerIdx;
+  document.getElementById('roomCodeDisplay').textContent = code;
+  showScreen('hostScreen');
+});
+
+socket.on('roomJoined', ({ code, playerIdx }) => {
+  myIdx = playerIdx;
+  // waiting for gameStart
+});
+
+socket.on('yourIndex', idx => {
+  myIdx = idx;
+});
+
+socket.on('error', ({ msg }) => {
+  document.getElementById('joinErr').textContent = msg;
+});
+
+socket.on('gameStart', ({ charTypes, state }) => {
+  gameState = state;
+  // Update char names in HUD
+  if (charTypes) {
+    document.getElementById('p0name').textContent = charTypes[0].toUpperCase();
+    document.getElementById('p1name').textContent = charTypes[1].toUpperCase();
+  }
+  showScreen('gameScreen');
+  gameActive = true;
+  hideOverlays();
+  startRenderLoop();
+  // Show FIGHT! flash
+  setTimeout(() => showFlash('flashFight', 1200), 300);
+});
+
+socket.on('tick', state => {
+  const prevPhase = gameState ? gameState.phase : null;
+  gameState = state;
+
+  if (prevPhase === 'fighting' && state.phase === 'roundover') {
+    handleRoundOver(state);
+  }
+  if (prevPhase !== 'gameover' && state.phase === 'gameover') {
+    handleGameOver(state);
+  }
+});
+
+function handleRoundOver(gs) {
+  const w = gs.roundWinner;
+  const sub = w !== null
+    ? (gs.players[w].charType.toUpperCase() + ' WINS!')
+    : 'DRAW!';
+  document.getElementById('roundTitle').textContent = w !== null ? 'ROUND OVER' : 'DRAW';
+  document.getElementById('roundSub').textContent   = sub;
+  showOverlay('roundOverlay');
+  if (w !== null) showFlash('flashKO', 1800);
+}
+
+function handleGameOver(gs) {
+  const w = gs.roundWinner;
+  const name = w !== null ? gs.players[w].charType.toUpperCase() : 'NOBODY';
+  document.getElementById('goTitle').textContent = w !== null ? name + ' WINS!' : 'DRAW!';
+  document.getElementById('goTitle').style.color = w === 0 ? '#e03030' : w === 1 ? '#3060e0' : '#ffcc00';
+  document.getElementById('goSub').textContent   = w === myIdx ? '🏆 VICTORY!' : w !== null ? '💀 DEFEATED' : '🤝 DRAW';
+  showOverlay('gameOverOverlay');
+}
+
+socket.on('rematch', ({ state }) => {
+  gameState = state;
+  hideOverlays();
+  setTimeout(() => showFlash('flashFight', 1200), 300);
+});
+
+socket.on('opponentLeft', () => {
+  gameActive = false;
+  showOverlay('disconnectOverlay');
+  setTimeout(stopRenderLoop, 5000);
+});
+
+// ═══════════════════════════════════════════════════
+// CHARACTER PREVIEW (title screen)
+// ═══════════════════════════════════════════════════
+function drawPreview() {
+  ['warrior','ninja'].forEach(char => {
+    const cv2 = document.getElementById('preview' + char.charAt(0).toUpperCase() + char.slice(1));
+    const c2  = cv2.getContext('2d');
+    c2.clearRect(0,0,64,96);
+    const dummyP = {
+      charType: char, state:'idle', stateTimer:0, x:32, y:88,
+      facing:1, specialCD:0, comboCount:0, comboTimer:0,
+    };
+    // Draw in small canvas
+    c2.save();
+    c2.scale(0.5, 0.5);
+    c2.translate(32, 40);
+    const isWarrior = char === 'warrior';
+    const mc = isWarrior ? '#cc2020' : '#2040cc';
+    const dc = isWarrior ? '#881010' : '#102088';
+    const sk = '#e8b48a';
+    const t  = Date.now()/1000;
+    const bob = Math.sin(t*2)*2;
+    // Simplified preview
+    c2.fillStyle = mc;
+    c2.fillRect(-13, -72+bob, 26, 40);
+    c2.fillStyle = dc;
+    c2.fillRect(-13, -72+bob, 5, 40);
+    c2.fillStyle = '#111';
+    c2.fillRect(-13, -36+bob, 26, 5);
+    c2.fillStyle = mc;
+    c2.fillRect(-8, -30, 16, 32);
+    c2.fillStyle = '#222'; c2.fillRect(-9,28,10,5); c2.fillRect(1,28,10,5);
+    c2.fillStyle = sk; c2.fillRect(-5, -78+bob, 10, 8);
+    if (isWarrior) {
+      c2.fillStyle = sk; c2.fillRect(-12,-100+bob,24,24);
+      c2.fillStyle = dc; c2.fillRect(-14,-86+bob,28,5);
+      c2.fillStyle = '#fff'; c2.fillRect(-6,-96+bob,4,4); c2.fillRect(1,-96+bob,4,4);
+    } else {
+      c2.fillStyle = '#334'; c2.fillRect(-12,-102+bob,24,28);
+      c2.fillStyle = '#00ddff'; c2.fillRect(-10,-94+bob,7,3); c2.fillRect(2,-94+bob,7,3);
+      c2.fillStyle = dc; c2.fillRect(-13,-100+bob,26,5);
+    }
+    c2.restore();
+  });
+  requestAnimationFrame(drawPreview);
+}
+drawPreview();
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+let selectedChar = 'warrior';
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function selectChar(c) {
+  selectedChar = c;
+  myChar = c;
+  document.getElementById('charWarrior').className = 'char-preview' + (c==='warrior'?' selected':'');
+  document.getElementById('charNinja').className   = 'char-preview' + (c==='ninja'?' selected':'');
+}
+
+function goTitle() {
+  gameActive = false;
+  stopRenderLoop();
+  showScreen('titleScreen');
+}
+
+function goCreate() {
+  socket.emit('createRoom', { charType: selectedChar });
+}
+
+function goJoin() {
+  document.getElementById('joinErr').textContent = '';
+  document.getElementById('codeInput').value = '';
+  showScreen('joinScreen');
+}
+
+function submitJoin() {
+  const code = document.getElementById('codeInput').value.trim().toUpperCase();
+  if (code.length !== 6) {
+    document.getElementById('joinErr').textContent = 'Enter 6-character code';
+    return;
+  }
+  socket.emit('joinRoom', { code, charType: selectedChar });
+  showScreen('hostScreen');
+  document.getElementById('hostStatus').textContent = 'Connecting to room ' + code + '...';
+  document.getElementById('roomCodeDisplay').textContent = code;
+}
+
+function requestRematch() {
+  socket.emit('rematch');
+}
+
+document.getElementById('codeInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitJoin();
+});
+</script>
+</body>
+</html>
